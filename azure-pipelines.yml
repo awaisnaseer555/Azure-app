@@ -51,7 +51,7 @@ stages:
     
       - deployment: DeployWebsite
         displayName: 'Deploy website'
-        environment: 'MySystem.TEO-AHTESHAM1'
+        environment: 'yamlENV.TEO-AWAISN'
         strategy:
           runOnce:
             deploy:
