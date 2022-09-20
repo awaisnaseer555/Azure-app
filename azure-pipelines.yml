@@ -1,0 +1,78 @@
+# ASP.NET Core (.NET Framework)
+# Build and test ASP.NET Core projects targeting the full .NET Framework.
+# Add steps that publish symbols, save build artifacts, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+
+trigger:
+- none
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+
+  buildConfiguration: 'Release'
+ 
+
+stages:
+  - stage: 'build_stage'
+    displayName: 'build the stage'
+    jobs:
+      - job: build
+        steps:
+          - task: DotNetCoreCLI@2
+            displayName: 'dotnet restore'
+            inputs:
+              command: 'restore'
+              projects: '**\*.csproj'
+          - task: DotNetCoreCLI@2
+            displayName: 'dotnet build'
+            inputs:
+              command: 'build'
+              projects: '**\*.csproj'
+              arguments: '--configuration $(buildConfiguration)'
+            
+          - task: DotNetCoreCLI@2
+            displayName: 'dotnet publish'
+            inputs:
+              command: publish
+              publishWebProjects: true
+              arguments: '-c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)'
+          
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+              ArtifactName: 'drop'
+              publishLocation: 'Container'
+  
+  - stage: 'dev_Stage'
+    displayName: 'build the stage'
+    jobs:
+    
+      - deployment: DeployWebsite
+        displayName: 'Deploy website'
+        environment: 'MySystem.TEO-AHTESHAM1'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: none     
+
+                - task: DownloadBuildArtifacts@1
+                  inputs:
+                    buildType: 'current'
+                    downloadType: 'single'
+                    artifactName: 'drop'
+                    downloadPath: '$(System.ArtifactStagingDirectory)'
+                
+                - task: IISWebAppDeploymentOnMachineGroup@0
+                  name: 'DeployIIS'
+                  displayName: 'Deploy IIS website'                
+                  inputs:
+                    WebSiteName: 'TestWithYaml'
+                    #Package: '$(Pipeline.Workspace)\buildPipeline\drop\TestProject'
+                    #Package: '$(System.ArtifactStagingDirectory)\drop\TestProject'
+                    Package: '$(System.ArtifactStagingDirectory)\drop/Testproject.zip'
+                    TakeAppOfflineFlag: true
+
+  
